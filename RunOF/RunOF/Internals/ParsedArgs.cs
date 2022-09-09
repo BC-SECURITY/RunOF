@@ -37,10 +37,11 @@ namespace RunOF.Internals
             Logger.Debug($"Parsing {args.Length} Arguments: {string.Join(" ", args)}");
             of_args = new List<OfArg>();
             // Mandatory arguments are either file (-f) or base 64 encoded bytes(-b)
-            if (!args.Contains("-f") && !args.Contains("-a"))
+            if (args.Length == 0)
             {
+                Logger.Error("No arguments provided");
                 PrintUsage();
-                throw new ArgumentException("Invalid Command Line");
+                throw new ArgumentNullException();
             }
 
             if (args.Contains("-f"))
@@ -63,15 +64,15 @@ namespace RunOF.Internals
                     PrintUsage();
                     throw new ArgumentException("Unable to extract filename from arguments (use -f <filename>");
                 }
-            } else if (args.Contains("-a"))
+            } else if (args.Contains("-a:"))
             {
                 try
                 {
-                    file_bytes = Convert.FromBase64String(ExtractArg(args, "-a"));
+                    file_bytes = Convert.FromBase64String(ExtractArg(args, "-a:"));
                 } catch (Exception e)
                 {
                     PrintUsage();
-                    throw new ArgumentException($"Unable to extract binary object file from arguments (use -a <b64_blog> \n {e}");
+                    throw new ArgumentException($"Unable to extract binary object file from arguments (use -a:<b64_blog> \n {e}");
                 }
 
             }
@@ -234,12 +235,12 @@ Usage:
 
     One of these is required:
         -f Path to an object file to load
-        -a Base64 encoded object file
+        -a:<base64> Base64 encoded object file
 
     Optional arguments:
 
         -t <timeout> Set thread timeout (in seconds) - default 30 if not specified
-        -e <entry> Set entry function name - defaults to go 
+        -e <entry> Set entry function name - defaults to go
 
         These are passed to the object file *in the order they are on the command line*.
 

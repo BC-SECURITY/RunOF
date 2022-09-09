@@ -30,10 +30,10 @@ namespace RunOF.Internals
             // It also has a wrapper for the bof entry point (go_wrapper) that allows us to pass arguments. 
             byte[] beacon_funcs;
             string [] resource_names = Assembly.GetExecutingAssembly().GetManifestResourceNames();
-            if (resource_names.Contains("RunOF.beacon_funcs"))
+            if (resource_names.Contains("beacon_funcs.zip"))
             {
                 var ms = new MemoryStream();
-                Stream resStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("RunOF.beacon_funcs");
+                Stream resStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("beacon_funcs.zip");
                 resStream.CopyTo(ms);
                 beacon_funcs = ms.ToArray();
             } else

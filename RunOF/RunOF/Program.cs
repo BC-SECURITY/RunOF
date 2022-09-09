@@ -5,11 +5,11 @@ using System.Diagnostics;
 
 namespace RunOF
 {
-    class Program
+    public class Program
     {
         private const int ERROR_INVALID_COMMAND_LINE = 0x667;
 
-        static int Main(string[] args)
+        public static int Main(string[] args)
         {
 
 #if _X86
@@ -104,7 +104,7 @@ namespace RunOF
 
         }
 
-        public static void Debug(string Message, [CallerMemberName] string caller = "")
+        public static void Debug(string Message, string caller = "")
         {
             var methodInfo = new StackTrace().GetFrame(1).GetMethod();
             var className = methodInfo.ReflectedType.Name;
