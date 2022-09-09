@@ -418,6 +418,7 @@ namespace RunOF.Internals
         private bool ArchitectureCheck()
         {
             this.BofArch = this.file_header.Machine == IMAGE_FILE_MACHINE.IMAGE_FILE_MACHINE_AMD64 ? ARCH.AMD64 : ARCH.I386;
+
             if (this.BofArch == this.MyArch) return true;
             return false;
 

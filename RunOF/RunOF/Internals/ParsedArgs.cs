@@ -39,7 +39,6 @@ namespace RunOF.Internals
             // Mandatory arguments are either file (-f) or base 64 encoded bytes(-b)
             if (args.Length == 0)
             {
-                Logger.Error("No arguments provided");
                 PrintUsage();
                 throw new ArgumentNullException();
             }

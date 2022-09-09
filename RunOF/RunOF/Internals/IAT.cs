@@ -59,7 +59,7 @@ namespace RunOF.Internals
             return this.iat_entries[dll_name + "$" + func_name]; 
 
 
-#else
+#elif _AMD64
             Logger.Debug($"Adding {dll_name + "$" + func_name} at address {func_address.ToInt64():X} to IAT address {this.iat_addr.ToInt64() + (this.iat_count * 8):X}");
 
 
