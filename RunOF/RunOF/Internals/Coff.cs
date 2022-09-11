@@ -80,6 +80,7 @@ namespace RunOF.Internals
                 if (!ArchitectureCheck())
                 {
                     Logger.Error($"Object file architecture {this.BofArch} does not match process architecture {this.MyArch}");
+                    throw new NotImplementedException();
                 }
 
                 // Compilers use different prefixes to symbols depending on architecture. 
@@ -603,14 +604,16 @@ namespace RunOF.Internals
                         Logger.Debug("\tResolving internal reference");
                         IntPtr reloc_location = this.base_addr + (int)section_header.PointerToRawData + (int)reloc.VirtualAddress;
                         Logger.Debug($"reloc_location: 0x{reloc_location.ToInt64():X}, section offset: 0x{section_header.PointerToRawData:X} reloc VA: {reloc.VirtualAddress:X}");
+                        Console.WriteLine($"reloc.Type: {reloc.Type}");
 #if _I386
                         Int32 current_value = Marshal.ReadInt32(reloc_location);
                         Int32 object_addr;
 #elif _AMD64
-                        Int64 current_value = Marshal.ReadInt64(reloc_location);
+                        Int32 current_value = Marshal.ReadInt64(reloc_location);
                         Int32 current_value_32 = Marshal.ReadInt32(reloc_location);
                         Int64 object_addr;
 #endif
+
                         switch (reloc.Type)
                         {
 #if _I386
