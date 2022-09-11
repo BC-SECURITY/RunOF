@@ -85,16 +85,8 @@ namespace RunOF.Internals
 
                 // Compilers use different prefixes to symbols depending on architecture. 
                 // There might be other naming conventions for functions imported in different ways, but I'm not sure.
-                if (this.BofArch == ARCH.I386)
-                {
-                    this.ImportPrefix = "__imp__";
-                    this.HelperPrefix = "_"; // This I think means a global function
-                }
-                else if (this.BofArch == ARCH.AMD64)
-                {
-                    this.ImportPrefix = "__imp_";
-                    this.HelperPrefix = String.Empty;
-                }
+                this.ImportPrefix = "__imp_";
+                this.HelperPrefix = String.Empty;
 
                 if (this.file_header.SizeOfOptionalHeader != 0)
                 {
@@ -183,23 +175,13 @@ namespace RunOF.Internals
 
                 // Compilers use different prefixes to symbols depending on architecture. 
                 // There might be other naming conventions for functions imported in different ways, but I'm not sure.
-                if (this.BofArch == ARCH.I386)
-                {
-                    this.ImportPrefix = "__imp__";
-                    this.HelperPrefix = "_"; // This I think means a global function
-                    this.EntrySymbol = "_go";
-                }
-                else if (this.BofArch == ARCH.AMD64)
-                {
-                    this.ImportPrefix = "__imp_";
-                    this.EntrySymbol = "go";
-                    this.HelperPrefix = String.Empty;
-                }
+                this.ImportPrefix = "__imp_";
+                this.EntrySymbol = "go";
+                this.HelperPrefix = String.Empty;
             }
             catch (Exception e)
             {
                 Logger.Error($"Unable to load object file - {e}");
-                throw (e);
             }
 
         }
@@ -547,51 +529,10 @@ namespace RunOF.Internals
 
                         switch (reloc.Type)
                         {
-#if _I386
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_ABSOLUTE:
-                                // The relocation is ignored
-                                break;
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_DIR16:
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_REL16:
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_SEG12:
-                                // The relocation is not supported;
-                                break;
-
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_DIR32:
-                                // The target's 32-bit VA.
-
-                                Marshal.WriteInt32(reloc_location, func_addr.ToInt32());
-                                break;
-
-
-
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_REL32:
-                                // TODO - not seen this "in the wild"
-                                Marshal.WriteInt32(reloc_location, (func_addr.ToInt32()-4) - reloc_location.ToInt32());
-                                break;
-
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_DIR32NB:
-                                // The target's 32-bit RVA.
-                                Marshal.WriteInt32(reloc_location, (func_addr.ToInt32() - 4) - reloc_location.ToInt32() - this.base_addr.ToInt32());
-                                break;
-
-                            // These relocations will fall through as unhandled for now
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_SECTION:
-                            // The 16-bit section index of the section that contains the target. This is used to support debugging information.
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_SECREL:
-                            // The 32-bit offset of the target from the beginning of its section. This is used to support debugging information and static thread local storage.
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_TOKEN:
-                            // The CLR token.
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_SECREL7:
-                            // A 7-bit offset from the base of the section that contains the target.
-
-
-#elif _AMD64
                             case IMAGE_RELOCATION_TYPE.IMAGE_REL_AMD64_REL32:
                                 Marshal.WriteInt32(reloc_location, (int)((func_addr.ToInt64()-4) - (reloc_location.ToInt64()))); // subtract the size of the relocation (relative to the end of the reloc)
                                 break;
 
-#endif
                             default:
                                 throw new Exception($"Unable to process function relocation type {reloc.Type} - please file a bug report.");
                     }
@@ -604,56 +545,13 @@ namespace RunOF.Internals
                         Logger.Debug("\tResolving internal reference");
                         IntPtr reloc_location = this.base_addr + (int)section_header.PointerToRawData + (int)reloc.VirtualAddress;
                         Logger.Debug($"reloc_location: 0x{reloc_location.ToInt64():X}, section offset: 0x{section_header.PointerToRawData:X} reloc VA: {reloc.VirtualAddress:X}");
-                        Console.WriteLine($"reloc.Type: {reloc.Type}");
-#if _I386
-                        Int32 current_value = Marshal.ReadInt32(reloc_location);
-                        Int32 object_addr;
-#elif _AMD64
-                        Int32 current_value = Marshal.ReadInt64(reloc_location);
-                        Int32 current_value_32 = Marshal.ReadInt32(reloc_location);
+
+                        Int64 current_value =  Marshal.ReadInt64(reloc_location);
+                        Int64 current_value_32 = Marshal.ReadInt32(reloc_location);
                         Int64 object_addr;
-#endif
 
                         switch (reloc.Type)
                         {
-#if _I386
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_ABSOLUTE:
-                                // The relocation is ignored
-                                break;
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_DIR16:
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_REL16:
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_SEG12:
-                                // The relocation is not supported;
-                                break;
-
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_DIR32:
-                                // The target's 32-bit VA
-                                Marshal.WriteInt32(reloc_location, current_value + this.base_addr.ToInt32() + (int)this.section_headers[(int)reloc_symbol.SectionNumber - 1].PointerToRawData);
-                                break;
-
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_REL32:
-                                // The target's 32-bit RVA
-                                object_addr = current_value + this.base_addr.ToInt32() + (int)this.section_headers[(int)reloc_symbol.SectionNumber - 1].PointerToRawData;
-                                Marshal.WriteInt32(reloc_location, (object_addr-4) - reloc_location.ToInt32() );
-                                break;
-
-
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_DIR32NB:
-                                // The target's 32-bit RVA.
-                                object_addr = current_value + (int)this.section_headers[(int)reloc_symbol.SectionNumber - 1].PointerToRawData;
-                                Marshal.WriteInt32(reloc_location, (object_addr - 4) - reloc_location.ToInt32());
-                                break;
-
-                            // These relocations will fall through as unhandled for now
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_SECTION:
-                            // The 16-bit section index of the section that contains the target. This is used to support debugging information.
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_SECREL:
-                            // The 32-bit offset of the target from the beginning of its section. This is used to support debugging information and static thread local storage.
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_TOKEN:
-                            // The CLR token.
-                            case IMAGE_RELOCATION_TYPE.IMAGE_REL_I386_SECREL7:
-                            // A 7-bit offset from the base of the section that contains the target.
-#elif _AMD64
                             case IMAGE_RELOCATION_TYPE.IMAGE_REL_AMD64_ABSOLUTE:
                                 // The relocation is ignored
                                 break;
@@ -719,7 +617,6 @@ namespace RunOF.Internals
                                 // A pair that must immediately follow every span-dependent value.
                             case IMAGE_RELOCATION_TYPE.IMAGE_REL_AMD64_SSPAN32:
                                 // A 32-bit signed span-dependent value that is applied at link time.
-#endif
 
                             default:
                                 throw new Exception($"Unhandled relocation type {reloc.Type} - please file a bug report");

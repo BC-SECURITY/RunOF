@@ -70,6 +70,8 @@ namespace RunOF.Internals
 
             Logger.Debug("Loading boff object...");
             // create new coff
+            Console.WriteLine("File Bytes: " + parsed_args.file_bytes);
+            Console.WriteLine("IAT: " + this.iat);
             this.bof = new Coff(this.parsed_args.file_bytes, this.iat);
             Logger.Debug($"Loaded BOF with entry {this.entry_point.ToInt64():X}");
             // stitch up our go_wrapper and go functions
