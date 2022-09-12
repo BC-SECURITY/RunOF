@@ -80,7 +80,6 @@ namespace RunOF.Internals
                 if (!ArchitectureCheck())
                 {
                     Logger.Error($"Object file architecture {this.BofArch} does not match process architecture {this.MyArch}");
-                    throw new NotImplementedException();
                 }
 
                 // Compilers use different prefixes to symbols depending on architecture. 
