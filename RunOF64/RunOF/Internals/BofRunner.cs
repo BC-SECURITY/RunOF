@@ -29,17 +29,10 @@ namespace RunOF.Internals
             // This has the code for things like BeaconPrintf, BeaconOutput etc.
             // It also has a wrapper for the bof entry point (go_wrapper) that allows us to pass arguments. 
             byte[] beacon_funcs;
-            string [] resource_names = Assembly.GetExecutingAssembly().GetManifestResourceNames();
-            if (resource_names.Contains("RunOF.beacon_funcs"))
-            {
-                var ms = new MemoryStream();
-                Stream resStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("RunOF.beacon_funcs");
-                resStream.CopyTo(ms);
-                beacon_funcs = ms.ToArray();
-            } else
-            {
-                throw new Exception("Unable to load beacon_funcs resource");
-            }
+            var ms = new MemoryStream();
+            Stream resStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("RunOF.beacon_funcs.x64.o");
+            resStream.CopyTo(ms);
+            beacon_funcs = ms.ToArray();
 
             try
             {

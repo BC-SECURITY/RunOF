@@ -5,33 +5,26 @@ using System.Diagnostics;
 
 namespace RunOF
 {
-    class Program
+    public class Program
     {
         private const int ERROR_INVALID_COMMAND_LINE = 0x667;
 
-        static int Main(string[] args)
+        public static int Main(string[] args)
         {
-
-#if _X86
-            Logger.Info("Starting RunOF [x86]");
-#elif _AMD64
             Logger.Info("Starting RunOF [x64]");
-
-#endif
-
-#if DEBUG
-            Logger.Level = Logger.LogLevels.DEBUG;
-#endif
+            //Logger.Level = Logger.LogLevels.DEBUG;
 
             ParsedArgs ParsedArgs;
             try
             {
                 ParsedArgs = new ParsedArgs(args);
 
-            } catch (ArgumentNullException)
+            }
+            catch (ArgumentNullException)
             {
                 return 0;
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 Logger.Error($"Unable to parse application arguments: \n {e}");
                 return -1;
@@ -49,14 +42,6 @@ namespace RunOF
 
                 Logger.Info($"About to start BOF in new thread at {bof_runner.entry_point.ToInt64():X}");
                 // We only want the press enter to start if a debug build and -v flag supplied, as we might want logs from a non-interactive session
-#if DEBUG
-                if (ParsedArgs.debug)
-                {
-                
-                    Logger.Debug("Press enter to start it (✂️ attach debugger here...)");
-                    Console.ReadLine();
-            }
-#endif
 
 
                 var Result = bof_runner.RunBof(30);
@@ -64,13 +49,7 @@ namespace RunOF
                 Console.WriteLine("------- BOF OUTPUT ------");
                 Console.WriteLine($"{Result.Output}");
                 Console.WriteLine("------- BOF OUTPUT FINISHED ------");
-#if DEBUG
-                if (ParsedArgs.debug)
-                {
-                    Logger.Debug("Press enter to continue...");
-                    Console.ReadLine();
-            }
-#endif
+
                 Logger.Info("Thanks for playing!");
 
                 // Use our thread exit code as our app exit code so we can check for errors easily
@@ -84,9 +63,8 @@ namespace RunOF
             }
 
         }
-
-       
     }
+
     public static class Logger
     {
         public enum LogLevels
@@ -104,7 +82,7 @@ namespace RunOF
 
         }
 
-        public static void Debug(string Message, [CallerMemberName] string caller = "")
+        public static void Debug(string Message, string caller = "")
         {
             var methodInfo = new StackTrace().GetFrame(1).GetMethod();
             var className = methodInfo.ReflectedType.Name;

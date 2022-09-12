@@ -5,9 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RunOF.Internals
+namespace RunOF
 {
-
     class ParsedArgs
     {
         internal string filename;
@@ -20,7 +19,6 @@ namespace RunOF.Internals
 
         public ParsedArgs(string[] args)
         {
-
             // Set our log level
             if (args.Contains("-v"))
             {
@@ -36,82 +34,86 @@ namespace RunOF.Internals
 
             Logger.Debug($"Parsing {args.Length} Arguments: {string.Join(" ", args)}");
             of_args = new List<OfArg>();
-            // Mandatory arguments are either file (-f) or base 64 encoded bytes(-b)
-            if (!args.Contains("-f") && !args.Contains("-a"))
-            {
-                PrintUsage();
-                throw new ArgumentException("Invalid Command Line");
-            }
 
-            if (args.Contains("-f"))
+            foreach (string arg in args)
             {
-                try
+                // Mandatory arguments are either file (-f) or base 64 encoded bytes(-b)
+                if (args.Length == 0)
                 {
-                    filename = ExtractArg(args, "-f");
+                    PrintUsage();
+                    throw new ArgumentNullException();
+                }
+
+                if (arg.Contains("-f:"))
+                {
                     try
                     {
-                        file_bytes = File.ReadAllBytes(filename);
+                        filename = ExtractArg(arg, "-f:");
+                        try
+                        {
+                            file_bytes = File.ReadAllBytes(filename);
+                        } catch (Exception e)
+                        {
+                            Logger.Error($"Unable to read file {filename} : {e}");
+                            throw new ArgumentException($"Unable to open provided filename: {e} ");
+                        }
+
+                    }
+                    catch
+                    {
+                        PrintUsage();
+                        throw new ArgumentException("Unable to extract filename from arguments (use -f <filename>");
+                    }
+                }
+                else if (arg.Contains("-a:"))
+                {
+                    try
+                    {
+                        file_bytes = Convert.FromBase64String(ExtractArg(arg, "-a:"));
                     } catch (Exception e)
                     {
-                        Logger.Error($"Unable to read file {filename} : {e}");
-                        throw new ArgumentException($"Unable to open provided filename: {e} ");
+                        PrintUsage();
+                        throw new ArgumentException($"Unable to extract binary object file from arguments (use -a:<b64_blog> \n {e}");
                     }
-
-                }
-                catch
-                {
-                    PrintUsage();
-                    throw new ArgumentException("Unable to extract filename from arguments (use -f <filename>");
-                }
-            } else if (args.Contains("-a"))
-            {
-                try
-                {
-                    file_bytes = Convert.FromBase64String(ExtractArg(args, "-a"));
-                } catch (Exception e)
-                {
-                    PrintUsage();
-                    throw new ArgumentException($"Unable to extract binary object file from arguments (use -a <b64_blog> \n {e}");
                 }
 
-            }
-
-
-            // Set our thread timeout (seconds).
-            // This can be a number, or -1
-            if (args.Contains("-t"))
-            {
-                try
+                // Set our thread timeout (seconds).
+                // This can be a number, or -1
+                if (arg.Contains("-t"))
                 {
-                    int t = int.Parse(ExtractArg(args, "-t"));
-                    if (t>=0)
+                    try
                     {
-                        this.thread_timeout = t * 1000;
-                    } else if (t==-1)
-                    {
-                        this.thread_timeout = -1;
-                    } else
-                    {
-                        Logger.Error("Timeout cannot be less than -1, ignoring");
+                        int t = int.Parse(ExtractArg(arg, "-t:"));
+                        if (t>=0)
+                        {
+                            this.thread_timeout = t * 1000;
+                        } else if (t==-1)
+                        {
+                            this.thread_timeout = -1;
+                        } else
+                        {
+                            Logger.Error("Timeout cannot be less than -1, ignoring");
+                        }
+
                     }
-
-                } catch (Exception e)
-                {
-                    PrintUsage();
-                    throw new ArgumentException("Unable to handle timeout argument \n {e}");
+                    catch (Exception e)
+                    {
+                        PrintUsage();
+                        throw new ArgumentException("Unable to handle timeout argument \n {e}");
+                    }
                 }
-            }
 
-            if (args.Contains("-e"))
-            {
-                try
+                if (arg.Contains("-e:"))
                 {
-                    this.entry_name = ExtractArg(args, "-e");
-
-                } catch(Exception e)
-                { 
-                    PrintUsage();
-                    throw new ArgumentException($"Unable to handle entry point argument \n {e}");
+                    try
+                    {
+                        this.entry_name = ExtractArg(arg, "-e");
+                    }
+                    catch(Exception e)
+                    {
+                        PrintUsage();
+                        throw new ArgumentException($"Unable to handle entry point argument \n {e}");
+                    }
                 }
             }
 
@@ -172,13 +174,8 @@ namespace RunOF.Internals
                     {
                         Logger.Error($"Unable to parse OF argument -Z as a string: {e}");
                     }
-
                 }
-
-
             }
-
-
         }
 
         public byte[] SerialiseArgs()
@@ -197,21 +194,12 @@ namespace RunOF.Internals
                 output_bytes.AddRange(of_arg.arg_data);
             }
             return output_bytes.ToArray();
-            
         }
 
-        private string ExtractArg(string[] args, string key)
+        private string ExtractArg(string args, string key)
         {
-            if (!args.Contains(key)) throw new Exception($"Args array does not contains key {key}");
-            if (args.Count() > Array.IndexOf(args, key))
-            {
-                return args[Array.IndexOf(args, key) + 1];
-            }
-            else
-            {
-                throw new Exception($"Key {key} does not have a value");
-            }
-
+            List<String> s = new List<String>(args.Split(new char[] {':'}));
+            return s[1];
         }
 
         private void PrintUsage()
@@ -234,12 +222,12 @@ Usage:
 
     One of these is required:
         -f Path to an object file to load
-        -a Base64 encoded object file
+        -a:<base64> Base64 encoded object file
 
     Optional arguments:
 
         -t <timeout> Set thread timeout (in seconds) - default 30 if not specified
-        -e <entry> Set entry function name - defaults to go 
+        -e <entry> Set entry function name - defaults to go
 
         These are passed to the object file *in the order they are on the command line*.
 
@@ -267,7 +255,6 @@ Usage:
             INT16,
             STR,
             WCHR_STR,
-
         }
 
         public byte[] arg_data;
@@ -283,7 +270,6 @@ Usage:
         {
             arg_type = ArgType.INT16;
             this.arg_data = BitConverter.GetBytes(arg_data);
-
         }
 
         public OfArg(string arg_data)
@@ -299,7 +285,5 @@ Usage:
             arg_type = ArgType.BINARY;
             this.arg_data = arg_data;
         }
-   
     }
-
 }

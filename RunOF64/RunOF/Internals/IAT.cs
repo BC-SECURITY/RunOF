@@ -45,21 +45,7 @@ namespace RunOF.Internals
         // This can also be called directly for functions where you already know the address (e.g. helper functions)
         public IntPtr Add(string dll_name, string func_name, IntPtr func_address)
         {
-#if _I386
-            Logger.Debug($"Adding {dll_name+ "$" + func_name} at address {func_address.ToInt64():X} to IAT address {this.iat_addr.ToInt64() + (this.iat_count * 4):X}");
 
-            if (this.iat_count * 4 > (this.iat_pages * Environment.SystemPageSize))
-            {
-                throw new Exception("Run out of space for IAT entries!");
-            }
-            Marshal.WriteInt32(this.iat_addr + (this.iat_count * 4), func_address.ToInt32());
-            this.iat_entries.Add(dll_name + "$" + func_name, this.iat_addr + (this.iat_count * 4));
-            this.iat_count++;
-
-            return this.iat_entries[dll_name + "$" + func_name]; 
-
-
-#elif _AMD64
             Logger.Debug($"Adding {dll_name + "$" + func_name} at address {func_address.ToInt64():X} to IAT address {this.iat_addr.ToInt64() + (this.iat_count * 8):X}");
 
 
@@ -72,12 +58,7 @@ namespace RunOF.Internals
             Marshal.WriteInt64(this.iat_addr + (this.iat_count * 8), func_address.ToInt64());
             this.iat_entries.Add(dll_name + "$" + func_name, this.iat_addr + (this.iat_count * 8));
             this.iat_count++;
-            return this.iat_entries[dll_name + "$" + func_name]; 
-
-
-#endif
-
-
+            return this.iat_entries[dll_name + "$" + func_name];
         }
 
         public void Update(string dll_name, string func_name, IntPtr func_address)
@@ -85,15 +66,9 @@ namespace RunOF.Internals
             if (!this.iat_entries.ContainsKey(dll_name + "$" + func_name)) throw new Exception($"Unable to update IAT entry for {dll_name + "$" + func_name} as don't have an existing entry for it");
             // Write the new address into our IAT memory. 
             // we don't need to update our internal iat_entries dict as that is just a mapping of name to IAT memory location.
-#if _I386
-            Logger.Debug($"Updating symbol {dll_name + "$" + func_name} @ {this.iat_entries[dll_name + "$" + func_name].ToInt64():X} from {Marshal.ReadInt32(this.iat_entries[dll_name + "$" + func_name]):X} to {func_address.ToInt32():X}");
-
-            Marshal.WriteInt32(this.iat_entries[dll_name + "$" + func_name], func_address.ToInt32());
-#elif _AMD64
             Logger.Debug($"Updating symbol {dll_name + "$" + func_name} from {Marshal.ReadInt64(this.iat_entries[dll_name + "$" + func_name]):X} to {func_address.ToInt64():X}");
 
             Marshal.WriteInt64(this.iat_entries[dll_name + "$" + func_name], func_address.ToInt64());
-#endif
         }
 
         internal void Clear()
